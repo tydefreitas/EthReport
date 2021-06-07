@@ -20,7 +20,7 @@ f = open(filename, 'a')
 
 today = datetime.now()
 
-
+#weeeeeeee
 
 headers = 'Date: {} \n'.format(today)
 
