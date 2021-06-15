@@ -23,7 +23,9 @@ f = open(filename, 'a')
 
 today = datetime.now()
 
-date = today.strftime("%m/%d/%Y")
+dateSQL = today.strftime("%m/%d/%Y")
+
+print(dateSQL)
 
 ###sql stuff hopefully###
 cursor = connection.cursor()
@@ -38,13 +40,16 @@ cursor.execute(command1)
 ###sql stuff hopefully###
 
 headers = 'Date: {} \n'.format(today)
-"""
+
 f.write(headers)
+
+payouts = ''
 
 try:
     for x in range(1,100):
         date = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='app']/main/div/div[2]/div/div[2]/div[3]/div/div[2]/div/div/table/tbody/tr[{}]/td[1]".format(x)))).text
         profit = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='app']/main/div/div[2]/div/div[2]/div[3]/div/div[2]/div/div/table/tbody/tr[{}]/td[5]".format(x)))).text
+        payouts += date + ',' + profit
         f.write(date + ',' + profit + '\n')
         maxProfit = maxProfit + float(profit)
 except selenium.common.exceptions.TimeoutException:
@@ -71,20 +76,25 @@ except selenium.common.exceptions.TimeoutException:
     usdB = '$' + str(usdA)
     oneETH = 1 - maxProfit
 
-    f.write("Total: " + str(("%.5f" % maxProfit))  +'\n')
+    Total = str("%.5f" % maxProfit)
+
+    cursor.execute("DELETE FROM track")
+
+    f.write("Total: " + Total  +'\n')
     f.write("Till one ETH: " + str(oneETH) +'\n')
     f.write("Eth Price USD: " + ethPrice +'\n')
     f.write("USD: " + usdB +'\n')
     f.write("CAD: " + cadC +'\n')
     f.write(' '+ '\n')
     f.write(' '+ '\n')
-    f.close()
-    """
-cursor.execute("INSERT INTO track VALUES (" + date + ", '31. May 2021 10:43,0.01112, 22. May 2021 19:32,0.01855, 08. May 2021 19:22,0.01322, 24. Apr. 2021 19:11,0.01527, 10. Apr. 2021 15:18,0.02196, 25. Mar. 2021 07:58,0.02554, 11. Mar. 2021 06:16,0.02107', 0.12673, 0.87327, 2571.32, 325, 394)")
+    f.close()  
+    
+    cursor.execute("INSERT INTO track VALUES ('" + dateSQL + "', '" + payouts + "', " + Total + "," + str(oneETH) + "," + ethPrice + "," + usdB + "," + cadC + ")")
 
-cursor.execute("SELECT * FROM track")
+    cursor.execute("SELECT * FROM track")
 
-results = cursor.fetchall()
-print(results)  
+    results = cursor.fetchall()
+    print(results)  
 
-driver.quit()
+    driver.quit()
+
