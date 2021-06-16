@@ -9,12 +9,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import sqlite3
+import re
 
 connection = sqlite3.connect('eth_tracking.db')
 
 driver = webdriver.Chrome()
 driver.get('https://ethermine.org/miners/4dc05FCD625552d9Bc396ac9F0BD8923f13E0d8C/payouts')
-wait = WebDriverWait(driver, 10)
+wait = WebDriverWait(driver, 5)
 
 maxProfit = 0
 
@@ -25,15 +26,13 @@ today = datetime.now()
 
 dateSQL = today.strftime("%m/%d/%Y")
 
-print(dateSQL)
-
 ###sql stuff hopefully###
 cursor = connection.cursor()
 
 # create stores table
 
 command1 = """CREATE TABLE IF NOT EXISTS
-track(track_id TEXT PRIMARY KEY, payouts TEXT, total_eth INTEGER, till_one_eth INTEGER, eth_price INTEGER, profit_usd INTEGER, profit_cad INTEGER)"""
+track(track_id TEXT PRIMARY KEY, payouts TEXT, total_eth INTEGER, till_one_eth INTEGER, eth_price TEXT, profit_usd TEXT, profit_cad TEXT)"""
 
 cursor.execute(command1)
 
@@ -48,9 +47,10 @@ payouts = ''
 try:
     for x in range(1,100):
         date = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='app']/main/div/div[2]/div/div[2]/div[3]/div/div[2]/div/div/table/tbody/tr[{}]/td[1]".format(x)))).text
+        newDate = re.sub('\s[0-9][0-9].[0-9][0-9]', '', date)
         profit = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='app']/main/div/div[2]/div/div[2]/div[3]/div/div[2]/div/div/table/tbody/tr[{}]/td[5]".format(x)))).text
-        payouts += date + ',' + profit
-        f.write(date + ',' + profit + '\n')
+        payouts += newDate + ',' + profit + " "
+        f.write(newDate + ',' + profit + '\n')
         maxProfit = maxProfit + float(profit)
 except selenium.common.exceptions.TimeoutException:
 
@@ -78,20 +78,24 @@ except selenium.common.exceptions.TimeoutException:
 
     Total = str("%.5f" % maxProfit)
 
-    cursor.execute("DELETE FROM track")
+    TrulyOneETH = str(oneETH)
 
     f.write("Total: " + Total  +'\n')
-    f.write("Till one ETH: " + str(oneETH) +'\n')
+    f.write("Till one ETH: " + TrulyOneETH +'\n')
     f.write("Eth Price USD: " + ethPrice +'\n')
     f.write("USD: " + usdB +'\n')
     f.write("CAD: " + cadC +'\n')
     f.write(' '+ '\n')
     f.write(' '+ '\n')
-    f.close()  
+    f.close()
+
+    ###sql stuff hopefully###
     
-    cursor.execute("INSERT INTO track VALUES ('" + dateSQL + "', '" + payouts + "', " + Total + "," + str(oneETH) + "," + ethPrice + "," + usdB + "," + cadC + ")")
+    cursor.execute("INSERT INTO track VALUES ('" + dateSQL + "', '" + payouts + "', " + Total + "," + TrulyOneETH + ",'" + ethPrice + "','" + usdB + "','" + cadC + "')")
 
     cursor.execute("SELECT * FROM track")
+
+    ###sql stuff hopefully###
 
     results = cursor.fetchall()
     print(results)  
